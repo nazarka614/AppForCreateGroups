@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
+import org.openqa.selenium.TimeoutException;
 
 public class TestWindow extends JFrame {
 
@@ -45,7 +46,7 @@ public class TestWindow extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // Добавляем пример курса в текстовое поле
-                textArea.append("Програмування Python для школярів, 9700, 15.04.25, 1\n");
+                textArea.append("Програмування Python для школярів, 9700, 15.10.29, 0\n");
             }
         });
 
@@ -65,8 +66,8 @@ public class TestWindow extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 if (testThread != null && testThread.isAlive()) {
                     testThread.interrupt(); // Прерываем поток
-                    textArea.append("Тест прерван пользователем.\n");
-                    System.out.println("Тест прерван пользователем.");
+//                    textArea.append("Тест прерван пользователем.\n");
+//                    System.out.println("Тест прерван пользователем.");
                 }
             }
         });
@@ -116,7 +117,7 @@ public class TestWindow extends JFrame {
                 // Проверяем, что список курсов не пуст
                 if (courses.isEmpty()) {
                     System.out.println("Список курсов пуст. Тест завершен.");
-                    textArea.append("Test completed successfully! (No courses to process)\n");
+//                    textArea.append("Test completed successfully! (No courses to process)\n");
                     return; // Завершаем выполнение, если курсов нет
                 }
 
@@ -152,11 +153,11 @@ public class TestWindow extends JFrame {
 
                 // Выводим результат в текстовое поле
                 if (!Thread.currentThread().isInterrupted()) {
-                    textArea.append("Test completed successfully!\n");
+//                    textArea.append("Test completed successfully!\n");
                     System.out.println("Тест завершен успешно.");
                 }
             } catch (Exception e) {
-                textArea.append("Test failed: " + e.getMessage() + "\n");
+//                textArea.append("Test failed: " + e.getMessage() + "\n");
                 System.out.println("Тест завершен с ошибкой: " + e.getMessage());
                 e.printStackTrace();
             } finally {
@@ -214,7 +215,31 @@ public class TestWindow extends JFrame {
 
         public void enterLoginAndPassword(User user, CourseData courseData) throws AWTException, InterruptedException {
             WebDriverWait wait = new WebDriverWait(driver, 10);
-            LoginTT(user); // Теперь driver не null
+            WebDriverWait wait1 = new WebDriverWait(driver, 2);
+
+            // Попытка ввести имя пользователя
+            try {
+                WebElement usernameField = wait1.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id='mat-input-0']")));
+                usernameField.sendKeys(user.getName());
+            } catch (TimeoutException e) {
+                System.out.println("Поле ввода имени пользователя не найдено. Пропускаем.");
+            }
+
+// Попытка ввести пароль
+            try {
+                WebElement passwordField = wait1.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id='mat-input-1']")));
+                passwordField.sendKeys(user.getPassword());
+            } catch (TimeoutException e) {
+                System.out.println("Поле ввода пароля не найдено. Пропускаем.");
+            }
+
+// Попытка нажать кнопку входа
+            try {
+                WebElement loginButton = wait1.until(ExpectedConditions.elementToBeClickable(By.xpath("//button[@type='submit']")));
+                loginButton.click();
+            } catch (TimeoutException e) {
+                System.out.println("Кнопка входа не найдена. Пропускаем.");
+            }
 
             // Используем данные из courseData
             String courseName = courseData.getCourseName();
@@ -288,6 +313,7 @@ public class TestWindow extends JFrame {
                 }
             }
         }
+
 
         private void waitForElementAndSendKeys(WebDriverWait wait, By locator, String text) {
             WebElement element = wait.until(ExpectedConditions.presenceOfElementLocated(locator));

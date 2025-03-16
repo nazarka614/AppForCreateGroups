@@ -1,0 +1,53 @@
+QA Manual 
+QA Technical Pro
+Postman Advanced: REST API
+QA Automation Python 
+QA Automation JavaScript
+Сертифікація ISTQB
+Front-end Basic
+Front-end Pro
+React 
+Node.js
+TypeScript
+Fullstack JS
+Java Basic
+Java Pro
+Python Basic  
+Python Pro 
+C# Basic
+C# Pro
+C++ Basic
+C++ Pro
+Linux
+DevOps Basic
+SQL
+Recruitment & HR
+Бізнес-аналіз
+Data Analytics Basic
+Data Analytics Pro
+Project Management 
+Project Management Pro
+Product Management
+Cybersecurity Manager
+Штучний інтелект для бізнесу та роботи
+Microsoft Excel
+Візуалізація даних з Google Sheets і Looker Studio
+Основи Web дизайну
+UI/UX Design Pro
+Графічний дизайн
+3D моделювання
+Social Media Marketing
+Таргетинг у Facebook та Instagram
+Інтернет-маркетинг
+English Elementary • A1
+English Pre-intermediate • A2
+English intermediate • B1
+English Upper- intermediate • B2
+Web-розробка для школярів
+Python для школярів
+Програмування Java для школярів
+Web дизайн для школярів
+3D моделювання для школярів
+Основи дизайну
+Розробка сайтів для школярів
+Розробка ігор на Roblox

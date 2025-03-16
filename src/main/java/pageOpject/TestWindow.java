@@ -1,23 +1,27 @@
 package pageOpject;
 
 import configuretions.BaseClass;
+import data.CourseManager;
 import data.User;
+import org.jdesktop.swingx.JXDatePicker;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Random;
+import javax.imageio.ImageIO;
 import org.openqa.selenium.TimeoutException;
 
 public class TestWindow extends JFrame {
@@ -31,26 +35,75 @@ public class TestWindow extends JFrame {
 
     // Поля для ввода данных курса
     private JComboBox<String> courseNameComboBox;
+    private CourseManager courseManager;
     private JTextField sumTextField;
-    private JTextField startDateTextField;
+    private JXDatePicker datePicker; // Заменяем JTextField на JXDatePicker
     private JComboBox<String> dayComboBox;
     private JButton addCourseButton;
     private JButton clearAllButton; // Кнопка "Очистить всё"
     private static JComboBox<String> unitComboBox;
 
+    private Image backgroundImage;
+
     public TestWindow() {
+        courseManager = new CourseManager();
+
+        // Загрузка курсов из файла
+        courseManager.loadCoursesFromFile("src/main/resources/courses.txt");
+
+        // Получение списка курсов
+        List<String> courseNames = courseManager.getCourseNames();
+
+        // Загрузка изображения для фона
+        try {
+            backgroundImage = ImageIO.read(new File("src/main/resources/hillel.jpg")); // Укажите путь к изображению
+        } catch (IOException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Не удалось загрузить изображение фона.", "Ошибка", JOptionPane.ERROR_MESSAGE);
+        }
+
+        // Инициализация JComboBox с загруженными данными
         setTitle("Test Runner");
-        setSize(500, 400);
+        setSize(600, 500); // Увеличиваем размер окна для удобства
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
+        // Создание панели с фоном
+        JPanel backgroundPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                if (backgroundImage != null) {
+                    // Растягиваем изображение на всю панель
+                    g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
+                }
+            }
+        };
+        backgroundPanel.setLayout(new BorderLayout()); // Используем BorderLayout для удобного размещения компонентов
+
+        // Инициализация JTextArea с увеличенным размером
         textArea = new JTextArea();
         textArea.setEditable(true);
+        textArea.setLineWrap(true); // Перенос строк
+        textArea.setWrapStyleWord(true); // Перенос по словам
+
+        // Установка предпочтительного размера (ширина и высота)
+        textArea.setPreferredSize(new Dimension(500, 150)); // Ширина 500, высота 150 (примерно 7 строк)
+
+        // Добавление JTextArea в JScrollPane
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS); // Всегда показывать вертикальную полосу прокрутки
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED); // Горизонтальная прокрутка, если нужно
 
         // Инициализация компонентов для ввода данных курса
-        courseNameComboBox = new JComboBox<>(new String[]{"Програмування Python для школярів", "Java для початківців", "Web Development"});
-        sumTextField = new JTextField(10);
-        startDateTextField = new JTextField(10);
+        courseNameComboBox = new JComboBox<>(courseNames.toArray(new String[0]));
+        sumTextField = new JTextField(15); // Увеличиваем ширину поля ввода
+
+        // Инициализация JXDatePicker для выбора даты
+        datePicker = new JXDatePicker();
+        datePicker.setFormats(new SimpleDateFormat("dd.MM.yy")); // Формат даты: дд.мм.гг
+        datePicker.setDate(new Date()); // Установка текущей даты по умолчанию
+
         dayComboBox = new JComboBox<>(new String[]{"Понедельник и четверг", "Вторник и пятница"});
         addCourseButton = new JButton("Добавить курс");
 
@@ -92,43 +145,85 @@ public class TestWindow extends JFrame {
         });
 
         unitComboBox = new JComboBox<>(new String[]{"u1", "u3", "u4", "Hillel IT School"});
+
         // Панель для ввода данных курса
         JPanel inputPanel = new JPanel();
-        inputPanel.setLayout(new GridLayout(6, 2)); // Увеличили количество строк на 1 для Unit
-        inputPanel.add(new JLabel("Название курса:"));
-        inputPanel.add(courseNameComboBox);
-        inputPanel.add(new JLabel("Цена:"));
-        inputPanel.add(sumTextField);
-        inputPanel.add(new JLabel("Дата начала:"));
-        inputPanel.add(startDateTextField);
-        inputPanel.add(new JLabel("День недели:"));
-        inputPanel.add(dayComboBox);
-        inputPanel.add(new JLabel("Unit:"));
-        inputPanel.add(unitComboBox); // Добавляем дропдаун Unit
-        inputPanel.add(new JLabel(""));
-        inputPanel.add(addCourseButton);
+        inputPanel.setLayout(new GridBagLayout());
+        inputPanel.setOpaque(false); // Делаем панель прозрачной, чтобы был виден фон
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10); // Отступы между компонентами
+        gbc.anchor = GridBagConstraints.WEST; // Выравнивание по левому краю
+
+        // Добавление компонентов с отступами
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        inputPanel.add(new JLabel("Название курса:"), gbc);
+
+        gbc.gridx = 1;
+        inputPanel.add(courseNameComboBox, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        inputPanel.add(new JLabel("Цена:"), gbc);
+
+        gbc.gridx = 1;
+        inputPanel.add(sumTextField, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        inputPanel.add(new JLabel("Дата начала:"), gbc);
+
+        gbc.gridx = 1;
+        inputPanel.add(datePicker, gbc); // Добавляем JXDatePicker вместо JTextField
+
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        inputPanel.add(new JLabel("День недели:"), gbc);
+
+        gbc.gridx = 1;
+        inputPanel.add(dayComboBox, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        inputPanel.add(new JLabel("Unit:"), gbc);
+
+        gbc.gridx = 1;
+        inputPanel.add(unitComboBox, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 5;
+        gbc.gridwidth = 2; // Растягиваем на две колонки
+        gbc.anchor = GridBagConstraints.CENTER; // Выравнивание по центру
+        inputPanel.add(addCourseButton, gbc);
 
         // Панель для кнопок управления тестом
         JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10)); // Отступы между кнопками
+        buttonPanel.setOpaque(false); // Делаем панель прозрачной, чтобы был виден фон
         buttonPanel.add(startButton);
         buttonPanel.add(stopButton);
-        buttonPanel.add(clearAllButton); // Добавляем кнопку "Очистить всё"
+        buttonPanel.add(clearAllButton);
 
         // Основная панель
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.add(new JScrollPane(textArea));
-        panel.add(inputPanel);
-        panel.add(buttonPanel);
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        mainPanel.setOpaque(false); // Делаем панель прозрачной, чтобы был виден фон
+        mainPanel.add(scrollPane); // Добавляем JScrollPane с JTextArea
+        mainPanel.add(inputPanel);
+        mainPanel.add(buttonPanel);
 
-        add(panel);
+        // Добавление основной панели на панель с фоном
+        backgroundPanel.add(mainPanel, BorderLayout.CENTER);
+
+        // Добавление панели с фоном в окно
+        add(backgroundPanel);
     }
 
     private void addCourse() {
         String courseName = (String) courseNameComboBox.getSelectedItem();
         String sum = sumTextField.getText();
-        String startDate = startDateTextField.getText();
+        String startDate = new SimpleDateFormat("dd.MM.yy").format(datePicker.getDate()); // Получаем дату из JXDatePicker
         String day = (String) dayComboBox.getSelectedItem();
 
         // Проверка заполнения полей
@@ -145,7 +240,7 @@ public class TestWindow extends JFrame {
 
         // Очистка полей после добавления
         sumTextField.setText("");
-        startDateTextField.setText("");
+        datePicker.setDate(new Date()); // Сброс даты на текущую
     }
 
     private void clearAllCourses() {
@@ -231,7 +326,6 @@ public class TestWindow extends JFrame {
         });
     }
 
-
     public static class CourseData {
         private String courseName;
         private String sum;
@@ -279,7 +373,7 @@ public class TestWindow extends JFrame {
                 System.out.println("Поле ввода имени пользователя не найдено. Пропускаем.");
             }
 
-// Попытка ввести пароль
+            // Попытка ввести пароль
             try {
                 WebElement passwordField = wait1.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id='mat-input-1']")));
                 passwordField.sendKeys(user.getPassword());
@@ -287,7 +381,7 @@ public class TestWindow extends JFrame {
                 System.out.println("Поле ввода пароля не найдено. Пропускаем.");
             }
 
-// Попытка нажать кнопку входа
+            // Попытка нажать кнопку входа
             try {
                 WebElement loginButton = wait1.until(ExpectedConditions.elementToBeClickable(By.xpath("//button[@type='submit']")));
                 loginButton.click();
@@ -390,7 +484,6 @@ public class TestWindow extends JFrame {
                 }
             }
         }
-
 
         private void waitForElementAndSendKeys(WebDriverWait wait, By locator, String text) {
             WebElement element = wait.until(ExpectedConditions.presenceOfElementLocated(locator));

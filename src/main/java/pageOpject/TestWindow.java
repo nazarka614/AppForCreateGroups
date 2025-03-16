@@ -23,30 +23,51 @@ import org.openqa.selenium.TimeoutException;
 public class TestWindow extends JFrame {
 
     private JButton startButton;
-    private JButton stopButton; // Кнопка "Прервать тест"
+    private JButton stopButton;
     private JTextArea textArea;
     private WebDriver driver;
     private CreateGroup createGroup;
-    private Thread testThread; // Поток для выполнения теста
+    private Thread testThread;
+
+    // Поля для ввода данных курса
+    private JComboBox<String> courseNameComboBox;
+    private JTextField sumTextField;
+    private JTextField startDateTextField;
+    private JComboBox<String> dayComboBox;
+    private JButton addCourseButton;
+    private JButton clearAllButton; // Кнопка "Очистить всё"
+    private static JComboBox<String> unitComboBox;
 
     public TestWindow() {
-        // Настройка окна
         setTitle("Test Runner");
         setSize(500, 400);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        // Создание текстового поля
         textArea = new JTextArea();
-        textArea.setEditable(true); // Разрешаем редактирование
+        textArea.setEditable(true);
 
-        // Создание кнопки "Добавить шаблон"
-        JButton addTemplateButton = new JButton("Добавить шаблон");
-        addTemplateButton.addActionListener(new ActionListener() {
+        // Инициализация компонентов для ввода данных курса
+        courseNameComboBox = new JComboBox<>(new String[]{"Програмування Python для школярів", "Java для початківців", "Web Development"});
+        sumTextField = new JTextField(10);
+        startDateTextField = new JTextField(10);
+        dayComboBox = new JComboBox<>(new String[]{"Понедельник и четверг", "Вторник и пятница"});
+        addCourseButton = new JButton("Добавить курс");
+
+        // Кнопка "Очистить всё"
+        clearAllButton = new JButton("Очистить всё");
+        clearAllButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // Добавляем пример курса в текстовое поле
-                textArea.append("Програмування Python для школярів, 9700, 15.10.29, 0\n");
+                clearAllCourses();
+            }
+        });
+
+        // Обработчик для кнопки "Добавить курс"
+        addCourseButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                addCourse();
             }
         });
 
@@ -65,36 +86,80 @@ public class TestWindow extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (testThread != null && testThread.isAlive()) {
-                    testThread.interrupt(); // Прерываем поток
-//                    textArea.append("Тест прерван пользователем.\n");
-//                    System.out.println("Тест прерван пользователем.");
+                    testThread.interrupt();
                 }
             }
         });
 
-        // Добавление компонентов на окно
+        unitComboBox = new JComboBox<>(new String[]{"u1", "u3", "u4", "Hillel IT School"});
+        // Панель для ввода данных курса
+        JPanel inputPanel = new JPanel();
+        inputPanel.setLayout(new GridLayout(6, 2)); // Увеличили количество строк на 1 для Unit
+        inputPanel.add(new JLabel("Название курса:"));
+        inputPanel.add(courseNameComboBox);
+        inputPanel.add(new JLabel("Цена:"));
+        inputPanel.add(sumTextField);
+        inputPanel.add(new JLabel("Дата начала:"));
+        inputPanel.add(startDateTextField);
+        inputPanel.add(new JLabel("День недели:"));
+        inputPanel.add(dayComboBox);
+        inputPanel.add(new JLabel("Unit:"));
+        inputPanel.add(unitComboBox); // Добавляем дропдаун Unit
+        inputPanel.add(new JLabel(""));
+        inputPanel.add(addCourseButton);
+
+        // Панель для кнопок управления тестом
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+        buttonPanel.add(startButton);
+        buttonPanel.add(stopButton);
+        buttonPanel.add(clearAllButton); // Добавляем кнопку "Очистить всё"
+
+        // Основная панель
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.add(new JScrollPane(textArea));
-
-        // Панель для кнопок
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
-        buttonPanel.add(addTemplateButton);
-        buttonPanel.add(startButton);
-        buttonPanel.add(stopButton); // Добавляем кнопку "Прервать тест"
-
+        panel.add(inputPanel);
         panel.add(buttonPanel);
+
         add(panel);
+    }
+
+    private void addCourse() {
+        String courseName = (String) courseNameComboBox.getSelectedItem();
+        String sum = sumTextField.getText();
+        String startDate = startDateTextField.getText();
+        String day = (String) dayComboBox.getSelectedItem();
+
+        // Проверка заполнения полей
+        if (courseName.isEmpty() || sum.isEmpty() || startDate.isEmpty() || day.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Пожалуйста, заполните все поля.", "Ошибка", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Преобразование дня недели в числовой формат
+        int dayValue = day.equals("Понедельник и четверг") ? 0 : 1;
+
+        // Добавление курса в текстовое поле
+        textArea.append(courseName + ", " + sum + ", " + startDate + ", " + dayValue + "\n");
+
+        // Очистка полей после добавления
+        sumTextField.setText("");
+        startDateTextField.setText("");
+    }
+
+    private void clearAllCourses() {
+        // Очистка текстового поля
+        textArea.setText("");
     }
 
     private List<CourseData> parseCourses() {
         List<CourseData> courses = new ArrayList<>();
-        String text = textArea.getText(); // Получаем текст из текстового поля
-        String[] lines = text.split("\n"); // Разделяем текст на строки
+        String text = textArea.getText();
+        String[] lines = text.split("\n");
 
         for (String line : lines) {
-            String[] parts = line.split(", "); // Разделяем строку на части
+            String[] parts = line.split(", ");
             if (parts.length == 4) {
                 String courseName = parts[0];
                 String sum = parts[1];
@@ -110,18 +175,14 @@ public class TestWindow extends JFrame {
     private void runTest() {
         testThread = new Thread(() -> {
             try {
-                // Парсим курсы из текстового поля
                 List<CourseData> courses = parseCourses();
                 System.out.println("Курсы успешно распарсены: " + courses.size() + " курсов.");
 
-                // Проверяем, что список курсов не пуст
                 if (courses.isEmpty()) {
                     System.out.println("Список курсов пуст. Тест завершен.");
-//                    textArea.append("Test completed successfully! (No courses to process)\n");
-                    return; // Завершаем выполнение, если курсов нет
+                    return;
                 }
 
-                // Инициализация драйвера
                 driver = new ChromeDriver();
                 System.out.println("Драйвер успешно инициализирован.");
                 driver.manage().window().maximize();
@@ -129,16 +190,14 @@ public class TestWindow extends JFrame {
                 driver.get("https://tt.hillel.it/login");
                 System.out.println("Переход на страницу логина выполнен.");
 
-                // Инициализация CreateGroup с передачей драйвера
                 createGroup = new CreateGroup(driver);
                 System.out.println("CreateGroup успешно инициализирован.");
 
-                // Запуск теста для каждого курса
                 for (CourseData course : courses) {
                     if (Thread.currentThread().isInterrupted()) {
                         System.out.println("Тест прерван.");
                         textArea.append("Тест прерван.\n");
-                        break; // Выходим из цикла, если поток прерван
+                        break;
                     }
 
                     try {
@@ -151,26 +210,21 @@ public class TestWindow extends JFrame {
                     }
                 }
 
-                // Выводим результат в текстовое поле
                 if (!Thread.currentThread().isInterrupted()) {
-//                    textArea.append("Test completed successfully!\n");
                     System.out.println("Тест завершен успешно.");
                 }
             } catch (Exception e) {
-//                textArea.append("Test failed: " + e.getMessage() + "\n");
                 System.out.println("Тест завершен с ошибкой: " + e.getMessage());
                 e.printStackTrace();
             } finally {
-                // Не закрываем драйвер, чтобы браузер остался открытым
                 System.out.println("Тест завершен. Браузер остается открытым.");
             }
         });
 
-        testThread.start(); // Запускаем поток
+        testThread.start();
     }
 
     public static void main(String[] args) {
-        // Запуск окна в потоке обработки событий
         SwingUtilities.invokeLater(() -> {
             TestWindow window = new TestWindow();
             window.setVisible(true);
@@ -179,10 +233,10 @@ public class TestWindow extends JFrame {
 
 
     public static class CourseData {
-        private String courseName; // Название курса
-        private String sum; // Сумма курса
-        private String startDate; // Дата начала курса (в формате "дд.Мм.гггг")
-        private int day; // 0 означает понедельник и четверг, 1 означает вторник и пятница
+        private String courseName;
+        private String sum;
+        private String startDate;
+        private int day;
 
         public CourseData(String courseName, String sum, String startDate, int day) {
             this.courseName = courseName;
@@ -210,7 +264,7 @@ public class TestWindow extends JFrame {
 
     public static class CreateGroup extends BaseClass {
         public CreateGroup(WebDriver driver) {
-            super(driver); // Передаем driver в BaseClass
+            super(driver);
         }
 
         public void enterLoginAndPassword(User user, CourseData courseData) throws AWTException, InterruptedException {
@@ -249,7 +303,30 @@ public class TestWindow extends JFrame {
 
             // Переход на страницу расписания
             Thread.sleep(2000);
-            driver.get("https://tt.hillel.it/schedule/6223342596442367a40972a6?date=18.12.2023&status=active");
+            String selectedUnit = (String) unitComboBox.getSelectedItem();
+
+            // Выбор URL в зависимости от выбранного Unit
+            String scheduleUrl;
+            switch (selectedUnit) {
+                case "u1":
+                    scheduleUrl = "https://tt.hillel.it/schedule/62bc7f3e66a30457bf950e15?date=10.03.2025&status=active";
+                    driver.get(scheduleUrl);
+                    break;
+                case "u3":
+                    scheduleUrl = "https://tt.hillel.it/schedule/62bc7f9966a30457bf950f38?date=10.03.2025&status=active";
+                    driver.get(scheduleUrl);
+                    break;
+                case "u4":
+                    scheduleUrl = "https://tt.hillel.it/schedule/62bc7fb066a30457bf950f89?date=10.03.2025&status=active";
+                    driver.get(scheduleUrl);
+                    break;
+                case "Hillel IT School":
+                    scheduleUrl = "https://tt.hillel.it/schedule/6223342596442367a40972a6?date=18.12.2023&status=active";
+                    driver.get(scheduleUrl);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Неизвестный Unit: " + selectedUnit);
+            }
 
             // Открытие меню для создания группы
             waitForElementAndClick(wait, By.xpath("//mat-icon[contains(@class, 'layout__menu-icon--add') and contains(text(), 'add_circle')]"));
